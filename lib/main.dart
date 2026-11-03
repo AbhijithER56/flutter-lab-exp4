@@ -1,35 +1,34 @@
-// =============================================================================
-// EXPERIMENT 4 – FORM VALIDATION USING STATEFUL WIDGETS
-// Application : Car Mileage Calculator
+// ============================================================
+// Experiment 4: Form Validation using Stateful Widgets
+// App : Car Mileage Calculator ("Fuel Gauge" edition)
 //
-// Aim: Design and implement a Car Mileage Calculator using Flutter Forms,
-// TextFormField, Input Widgets and Stateful Widgets. Validate user inputs and
-// display the calculated mileage dynamically.
+// Mileage (km/l) = Distance (km) / Fuel (litres)
+//   below 10    -> Poor Efficiency
+//   10 to 15    -> Average Efficiency
+//   above 15    -> Excellent Efficiency
 //
-// Formula      : Mileage (km/l) = Distance Travelled (km) / Fuel Consumed (l)
-// Efficiency   : mileage < 10        -> Poor Efficiency
-//                10 <= mileage <= 15 -> Average Efficiency
-//                mileage > 15        -> Excellent Efficiency
-// =============================================================================
+// Concepts: StatefulWidget, setState, Form, GlobalKey<FormState>,
+// TextFormField, TextEditingController, validators, InputDecoration,
+// TextInputType, Card/Container/Row/Column, SingleChildScrollView.
+// ============================================================
 
 import 'package:flutter/material.dart';
 
-// main() is the entry point of every Dart / Flutter program.
-// runApp() inflates the given widget and attaches it to the screen.
 void main() {
   runApp(const CarMileageApp());
 }
 
-// Theme colours (green and blue theme).
-const Color kPrimaryBlue = Color(0xFF1565C0);
-const Color kPrimaryGreen = Color(0xFF2E7D32);
-const Color kLightBackground = Color(0xFFF1F8F6);
+// -------------------------------------------------------
+// Palette – graphite garage with orange and lime accents
+// -------------------------------------------------------
+const Color kGraphite = Color(0xFF0F1115);
+const Color kPanel = Color(0xFF1A1D24);
+const Color kOrange = Color(0xFFFF6B35);
+const Color kLime = Color(0xFFB8F34A);
+const Color kAmber = Color(0xFFFFC145);
+const Color kRed = Color(0xFFFF4D6D);
+const Color kSoft = Color(0xFF9AA3B2);
 
-// -----------------------------------------------------------------------------
-// MaterialApp – the root widget. It provides Material Design styling,
-// theming, navigation and the title of the application.
-// It is a StatelessWidget because the app-level configuration never changes.
-// -----------------------------------------------------------------------------
 class CarMileageApp extends StatelessWidget {
   const CarMileageApp({super.key});
 
@@ -40,25 +39,21 @@ class CarMileageApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: kGraphite,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: kPrimaryBlue,
-          primary: kPrimaryBlue,
-          secondary: kPrimaryGreen,
+          seedColor: kOrange,
+          brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: kLightBackground,
       ),
       home: const MileageCalculatorPage(),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// StatefulWidget – a widget whose UI can change during the app's lifetime.
-// A stateful widget is always written as TWO classes:
-//   1. The widget class (this one) – an immutable blueprint.
-//   2. The State class – holds the data (state) and builds the UI.
-// createState() creates the associated State object.
-// -----------------------------------------------------------------------------
+// -------------------------------------------------------
+// StatefulWidget: the page owns the form and the result
+// -------------------------------------------------------
 class MileageCalculatorPage extends StatefulWidget {
   const MileageCalculatorPage({super.key});
 
@@ -66,24 +61,20 @@ class MileageCalculatorPage extends StatefulWidget {
   State<MileageCalculatorPage> createState() => _MileageCalculatorPageState();
 }
 
-// The State class. The leading underscore (_) makes it private to this file.
 class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
-  // GlobalKey<FormState> – uniquely identifies the Form and gives access to
-  // its FormState so we can call validate() and reset() on all fields at once.
+  // Identifies the Form so validate()/reset() reach every field
   final _formKey = GlobalKey<FormState>();
 
-  // TextEditingController – reads, sets and clears the text of a
-  // TextFormField. One controller for each input field.
+  // One controller per input
   final _distanceController = TextEditingController();
   final _fuelController = TextEditingController();
 
-  // State variables – when these change inside setState(), the UI rebuilds.
-  double? _mileage; // null means "no result yet" -> result card is hidden
+  // State: null mileage means "no result yet", so the result card is hidden
+  double? _mileage;
   String _efficiency = '';
   double _distance = 0;
   double _fuel = 0;
 
-  // dispose() releases the controllers' resources when the widget is removed.
   @override
   void dispose() {
     _distanceController.dispose();
@@ -91,10 +82,8 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // VALIDATORS – a validator returns an error String to show below the field,
-  // or null when the input is valid.
-  // ---------------------------------------------------------------------------
+  // ---------------- Validators ----------------
+  // Return an error message, or null when the value is valid.
   String? _validateDistance(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Please enter distance travelled.';
@@ -123,30 +112,24 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     return null;
   }
 
-  // Efficiency classification exactly as given in the reference PDF.
-  String _classifyEfficiency(double mileage) {
-    if (mileage < 10) {
-      return 'Poor Efficiency';
-    } else if (mileage <= 15) {
-      return 'Average Efficiency';
-    } else {
-      return 'Excellent Efficiency';
-    }
+  String _classify(double mileage) {
+    if (mileage < 10) return 'Poor Efficiency';
+    if (mileage <= 15) return 'Average Efficiency';
+    return 'Excellent Efficiency';
   }
 
-  // Colour and icon used to highlight the efficiency classification.
-  Color get _efficiencyColor {
+  Color get _tone {
     switch (_efficiency) {
       case 'Poor Efficiency':
-        return const Color(0xFFC62828);
+        return kRed;
       case 'Average Efficiency':
-        return const Color(0xFFEF6C00);
+        return kAmber;
       default:
-        return kPrimaryGreen;
+        return kLime;
     }
   }
 
-  IconData get _efficiencyIcon {
+  IconData get _toneIcon {
     switch (_efficiency) {
       case 'Poor Efficiency':
         return Icons.trending_down;
@@ -157,20 +140,13 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // "Calculate Mileage" button handler.
-  //   1. Validate the form.
-  //   2. Calculate mileage = distance / fuel.
-  //   3. Determine efficiency classification.
-  //   4. Display the result using setState().
-  // ---------------------------------------------------------------------------
-  void _calculateMileage() {
-    // Hide the keyboard.
+  // ---------------- Actions ----------------
+  void _calculate() {
     FocusScope.of(context).unfocus();
 
-    // validate() runs every TextFormField validator; returns true if all pass.
+    // Runs every validator; false means at least one field is invalid
     if (!_formKey.currentState!.validate()) {
-      setState(() => _mileage = null); // hide any old result
+      setState(() => _mileage = null);
       return;
     }
 
@@ -178,32 +154,30 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     final fuel = double.parse(_fuelController.text.trim());
     final mileage = distance / fuel;
 
-    // setState() tells Flutter the state changed, so build() runs again and
-    // the result card is shown with the new values.
+    // setState rebuilds the page and reveals the result card
     setState(() {
       _distance = distance;
       _fuel = fuel;
       _mileage = mileage;
-      _efficiency = _classifyEfficiency(mileage);
+      _efficiency = _classify(mileage);
     });
   }
 
-  // "Clear" button handler – clears fields, validation messages and result.
-  void _clearForm() {
+  void _clear() {
     FocusScope.of(context).unfocus();
     _distanceController.clear();
     _fuelController.clear();
-    _formKey.currentState!.reset(); // removes validation error messages
+    _formKey.currentState!.reset(); // removes the error messages
     setState(() {
-      _mileage = null; // hides the result card
+      _mileage = null;
       _efficiency = '';
       _distance = 0;
       _fuel = 0;
     });
   }
 
-  // Formats a number without unnecessary trailing zeros (300.0 -> 300).
-  String _formatNumber(double value) {
+  // 300.0 -> "300", 125.5 -> "125.5"
+  String _fmt(double value) {
     if (value == value.roundToDouble()) return value.toStringAsFixed(0);
     return value
         .toStringAsFixed(2)
@@ -211,47 +185,38 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
         .replaceAll(RegExp(r'\.$'), '');
   }
 
-  // ---------------------------------------------------------------------------
-  // build() describes the UI. It is called again every time setState() runs.
-  // ---------------------------------------------------------------------------
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
-    // Scaffold – the basic Material page layout (AppBar + body).
     return Scaffold(
-      // AppBar – the top bar showing the screen title.
       appBar: AppBar(
-        title: const Text(
-          'Car Mileage Calculator',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        backgroundColor: kGraphite,
+        elevation: 0,
         centerTitle: true,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [kPrimaryBlue, kPrimaryGreen]),
+        title: const Text(
+          'FUEL GAUGE',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 4,
+            fontSize: 16,
+            color: kOrange,
           ),
         ),
       ),
-      // SafeArea + SingleChildScrollView – makes the page scrollable so that
-      // the keyboard or small screens never cause an overflow error.
       body: SafeArea(
         child: SingleChildScrollView(
-          // Padding – adds empty space around its child.
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Center(
-            // ConstrainedBox limits the width on tablets / desktops / browsers
-            // so the form looks good on every screen size (responsive design).
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
-              // Column – arranges its children vertically.
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  _buildFormCard(),
-                  const SizedBox(height: 24),
-                  // The result card is shown only after a valid calculation.
-                  if (_mileage != null) _buildResultCard(),
+                  _header(),
+                  const SizedBox(height: 20),
+                  _formCard(),
+                  const SizedBox(height: 20),
+                  if (_mileage != null) _resultCard(),
                 ],
               ),
             ),
@@ -261,147 +226,136 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     );
   }
 
-  // Header with title and subtitle.
-  Widget _buildHeader() {
+  Widget _header() {
     return const Column(
       children: [
         Text(
           '🚗 Car Mileage Calculator',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: kPrimaryBlue,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 6),
         Text(
           "Calculate your vehicle's fuel efficiency.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+          style: TextStyle(fontSize: 14, color: kSoft),
         ),
       ],
     );
   }
 
-  // Reusable InputDecoration – controls label, hint, icons, suffix and border.
-  InputDecoration _inputDecoration({
+  InputDecoration _decoration({
     required String label,
     required String hint,
     required IconData icon,
-    required String suffix,
+    required String unit,
   }) {
-    final radius = BorderRadius.circular(14);
+    OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c, width: w),
+        );
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: Icon(icon, color: kPrimaryBlue),
-      suffixText: suffix,
+      prefixIcon: Icon(icon, color: kOrange),
+      suffixText: unit,
+      suffixStyle: const TextStyle(color: kLime, fontWeight: FontWeight.w700),
       filled: true,
-      fillColor: const Color(0xFFF7FAFF),
-      errorMaxLines: 2,
-      border: OutlineInputBorder(borderRadius: radius),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: BorderSide(color: Colors.blueGrey.shade200),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: radius,
-        borderSide: const BorderSide(color: kPrimaryGreen, width: 2),
-      ),
+      fillColor: kGraphite,
+      border: border(const Color(0xFF2C313B)),
+      enabledBorder: border(const Color(0xFF2C313B)),
+      focusedBorder: border(kOrange, 1.8),
+      errorBorder: border(kRed),
+      focusedErrorBorder: border(kRed, 1.8),
+      errorStyle: const TextStyle(color: kRed),
     );
   }
 
-  // Card containing the Form with the two TextFormFields and two buttons.
-  Widget _buildFormCard() {
-    // Card – a Material panel with rounded corners and elevation (shadow).
+  Widget _formCard() {
     return Card(
-      elevation: 6,
-      shadowColor: kPrimaryBlue.withValues(alpha: 0.25),
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: kPanel,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: Color(0xFF262B35)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        // Form – a container that groups TextFormFields so they can be
-        // validated together using the GlobalKey<FormState>.
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // TextFormField – a text input with built-in validation support.
+              const Text(
+                'Trip details',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 key: const Key('distanceField'),
                 controller: _distanceController,
-                // TextInputType – numeric keyboard that allows decimals.
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
-                decoration: _inputDecoration(
-                  label: 'Distance Travelled',
-                  hint: 'Enter distance in km',
-                  icon: Icons.route,
-                  suffix: 'km',
-                ),
                 validator: _validateDistance,
+                decoration: _decoration(
+                  label: 'Distance Travelled',
+                  hint: 'e.g. 300',
+                  icon: Icons.route,
+                  unit: 'km',
+                ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               TextFormField(
                 key: const Key('fuelField'),
                 controller: _fuelController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _calculateMileage(),
-                decoration: _inputDecoration(
-                  label: 'Fuel Consumed',
-                  hint: 'Enter fuel consumed in litres',
-                  icon: Icons.local_gas_station,
-                  suffix: 'litres',
-                ),
                 validator: _validateFuel,
+                onFieldSubmitted: (_) => _calculate(),
+                decoration: _decoration(
+                  label: 'Fuel Consumed',
+                  hint: 'e.g. 20',
+                  icon: Icons.local_gas_station,
+                  unit: 'litres',
+                ),
               ),
-              const SizedBox(height: 24),
-              // Row – arranges the two buttons horizontally.
-              Row(
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    flex: 3,
-                    // ElevatedButton – a raised Material button.
-                    child: ElevatedButton.icon(
-                      key: const Key('calculateButton'),
-                      onPressed: _calculateMileage,
-                      icon: const Icon(Icons.calculate),
-                      label: const FittedBox(child: Text('Calculate Mileage')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kPrimaryGreen,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
+                  FilledButton.icon(
+                    key: const Key('calculateButton'),
+                    onPressed: _calculate,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: kOrange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
+                    icon: const Icon(Icons.speed),
+                    label: const Text('Calculate Mileage'),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      key: const Key('clearButton'),
-                      onPressed: _clearForm,
-                      icon: const Icon(Icons.refresh),
-                      label: const FittedBox(child: Text('Clear')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kPrimaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    key: const Key('clearButton'),
+                    onPressed: _clear,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kSoft,
+                      side: const BorderSide(color: Color(0xFF3A404C)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Clear'),
                   ),
                 ],
               ),
@@ -412,112 +366,172 @@ class _MileageCalculatorPageState extends State<MileageCalculatorPage> {
     );
   }
 
-  // Result card – shows mileage, unit, efficiency, distance and fuel.
-  Widget _buildResultCard() {
-    // Container – used here for the gradient background, rounded corners
-    // and shadow of the result card.
+  Widget _resultCard() {
+    final mileage = _mileage!;
     return Container(
       key: const Key('resultCard'),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [kPrimaryBlue, kPrimaryGreen],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: kPanel,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _tone.withValues(alpha: 0.7), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: kPrimaryGreen.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: _tone.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         children: [
           const Text(
-            'YOUR CAR MILEAGE',
+            'YOUR MILEAGE',
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 15,
-              letterSpacing: 1.5,
-              fontWeight: FontWeight.w600,
-            ),
+                color: kSoft,
+                fontSize: 12,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           FittedBox(
-            fit: BoxFit.scaleDown,
             child: Text(
-              '${_mileage!.toStringAsFixed(2)} km/l',
-              key: const Key('mileageText'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
+              '${mileage.toStringAsFixed(2)} km/l',
+              style: TextStyle(
+                fontSize: 44,
+                fontWeight: FontWeight.w900,
+                color: _tone,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          _gauge(mileage),
+          const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _tone.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_efficiencyIcon, color: _efficiencyColor),
-                const SizedBox(width: 8),
+                Icon(_toneIcon, size: 18, color: _tone),
+                const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     _efficiency,
-                    key: const Key('efficiencyText'),
-                    style: TextStyle(
-                      color: _efficiencyColor,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        TextStyle(color: _tone, fontWeight: FontWeight.w800),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const Divider(color: Colors.white38),
-          const SizedBox(height: 12),
-          _buildDetailRow(
-              Icons.route, 'Distance', '${_formatNumber(_distance)} km'),
-          const SizedBox(height: 8),
-          _buildDetailRow(Icons.local_gas_station, 'Fuel Used',
-              '${_formatNumber(_fuel)} litres'),
+          const SizedBox(height: 18),
+          const Divider(color: Color(0xFF2C313B)),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: _detail(
+                    Icons.route, 'Distance', '${_fmt(_distance)} km'),
+              ),
+              Expanded(
+                child: _detail(Icons.local_gas_station, 'Fuel',
+                    '${_fmt(_fuel)} litres'),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
+  // Three-band gauge (red / amber / lime) with a marker at the mileage.
+  // Scale runs from 0 to 25 km/l; larger values pin to the right edge.
+  Widget _gauge(double mileage) {
+    final fraction = (mileage / 25).clamp(0.0, 1.0);
+    return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 20),
-        const SizedBox(width: 10),
-        Text('$label:',
-            style: const TextStyle(color: Colors.white70, fontSize: 16)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        LayoutBuilder(
+          builder: (context, c) {
+            const markerSize = 14.0;
+            final left = fraction * (c.maxWidth - markerSize);
+            return SizedBox(
+              height: 22,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Row(
+                      children: const [
+                        Expanded(flex: 10, child: SizedBox(height: 8, child: ColoredBox(color: kRed))),
+                        Expanded(flex: 5, child: SizedBox(height: 8, child: ColoredBox(color: kAmber))),
+                        Expanded(flex: 10, child: SizedBox(height: 8, child: ColoredBox(color: kLime))),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: left,
+                    child: Container(
+                      width: markerSize,
+                      height: markerSize,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: kGraphite, width: 3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 4),
+        const Row(
+          children: [
+            Expanded(child: _LegendLabel('Poor <10', Alignment.centerLeft)),
+            Expanded(child: _LegendLabel('Average 10-15', Alignment.center)),
+            Expanded(child: _LegendLabel('Excellent >15', Alignment.centerRight)),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _detail(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: kOrange, size: 20),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: kSoft, fontSize: 11)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+// Small gauge legend label that shrinks instead of overflowing on narrow screens
+class _LegendLabel extends StatelessWidget {
+  const _LegendLabel(this.text, this.alignment);
+
+  final String text;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(text, style: const TextStyle(color: kSoft, fontSize: 10)),
+      ),
     );
   }
 }

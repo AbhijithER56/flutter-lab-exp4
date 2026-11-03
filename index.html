@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🚗 Car Mileage Calculator – Fuel Gauge</title>
+  <meta name="description" content="Flutter Lab Experiment 4: Car Mileage Calculator with form validation – Fuel Gauge edition." />
+  <style>
+    :root {
+      --bg: #0F1115; --panel: #1A1D24; --line: #262B35; --orange: #FF6B35;
+      --lime: #B8F34A; --amber: #FFC145; --red: #FF4D6D; --soft: #9AA3B2;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at 80% 0%, #2a1a14, var(--bg) 55%);
+      color: #fff; min-height: 100vh;
+    }
+    .appbar { text-align: center; padding: 18px; font-weight: 900; letter-spacing: 4px; font-size: 16px; color: var(--orange); }
+    .page { max-width: 560px; margin: 0 auto; padding: 12px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+    .head { text-align: center; }
+    .head h1 { font-size: 24px; font-weight: 800; }
+    .head p { color: var(--soft); font-size: 14px; margin-top: 6px; }
+
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 20px; }
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    .field { margin-bottom: 16px; }
+    .wrap {
+      display: flex; align-items: center; gap: 10px; background: var(--bg);
+      border: 1px solid #2C313B; border-radius: 14px; padding: 0 14px; transition: border-color .15s;
+    }
+    .wrap:focus-within { border: 1.8px solid var(--orange); padding: 0 13.2px; }
+    .wrap.bad { border-color: var(--red); }
+    .wrap span.i { font-size: 18px; }
+    .wrap input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #fff; font-size: 16px; padding: 16px 0; }
+    .wrap input::placeholder { color: #5b6473; }
+    .unit { color: var(--lime); font-weight: 700; font-size: 14px; }
+    .name { font-size: 12px; color: var(--soft); margin: 0 0 6px 4px; display: block; }
+    .err { color: var(--red); font-size: 12px; margin: 6px 0 0 4px; display: none; }
+    .err.show { display: block; }
+
+    .btns { display: flex; gap: 10px; }
+    .btns button { padding: 16px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform .12s; }
+    .btns button:active { transform: scale(.97); }
+    #calc { flex: 3; background: var(--orange); color: #fff; border: none; }
+    #clear { flex: 2; background: transparent; color: var(--soft); border: 1px solid #3A404C; }
+
+    .result { display: none; text-align: center; }
+    .result.show { display: block; animation: rise .4s ease; }
+    @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    .r-label { color: var(--soft); font-size: 12px; letter-spacing: 3px; font-weight: 700; }
+    .r-value { font-size: 48px; font-weight: 900; margin: 8px 0 14px; }
+    .gauge { position: relative; height: 22px; display: flex; align-items: center; }
+    .bands { display: flex; width: 100%; height: 8px; border-radius: 6px; overflow: hidden; }
+    .bands i { display: block; height: 100%; }
+    .marker { position: absolute; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--bg); transition: left .5s cubic-bezier(.2,.8,.2,1); }
+    .scale { display: flex; justify-content: space-between; color: var(--soft); font-size: 10px; margin-top: 4px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 30px; font-weight: 800; margin-top: 18px; }
+    hr { border: none; border-top: 1px solid #2C313B; margin: 18px 0 12px; }
+    .details { display: flex; justify-content: space-evenly; }
+    .details div { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+    .details small { color: var(--soft); font-size: 11px; }
+    .details b { font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="appbar">FUEL GAUGE</div>
+
+  <div class="page">
+    <div class="head">
+      <h1>🚗 Car Mileage Calculator</h1>
+      <p>Calculate your vehicle's fuel efficiency.</p>
+    </div>
+
+    <form class="card" id="form" novalidate>
+      <h2>Trip details</h2>
+
+      <div class="field">
+        <span class="name">Distance Travelled</span>
+        <div class="wrap" id="wDistance">
+          <span class="i">🛣️</span>
+          <input id="distance" inputmode="decimal" placeholder="e.g. 300" autocomplete="off" aria-label="Distance Travelled" />
+          <span class="unit">km</span>
+        </div>
+        <div class="err" id="eDistance"></div>
+      </div>
+
+      <div class="field">
+        <span class="name">Fuel Consumed</span>
+        <div class="wrap" id="wFuel">
+          <span class="i">⛽</span>
+          <input id="fuel" inputmode="decimal" placeholder="e.g. 20" autocomplete="off" aria-label="Fuel Consumed" />
+          <span class="unit">litres</span>
+        </div>
+        <div class="err" id="eFuel"></div>
+      </div>
+
+      <div class="btns">
+        <button type="submit" id="calc">⚡ Calculate Mileage</button>
+        <button type="button" id="clear">↺ Clear</button>
+      </div>
+    </form>
+
+    <div class="card result" id="result">
+      <div class="r-label">YOUR MILEAGE</div>
+      <div class="r-value" id="rValue"></div>
+      <div class="gauge">
+        <div class="bands"><i style="flex:10;background:var(--red)"></i><i style="flex:5;background:var(--amber)"></i><i style="flex:10;background:var(--lime)"></i></div>
+        <div class="marker" id="marker"></div>
+      </div>
+      <div class="scale"><span>Poor &lt;10</span><span>Average 10-15</span><span>Excellent &gt;15</span></div>
+      <div class="badge" id="badge"></div>
+      <hr />
+      <div class="details">
+        <div><span>🛣️</span><small>Distance</small><b id="dDistance"></b></div>
+        <div><span>⛽</span><small>Fuel</small><b id="dFuel"></b></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // Same rules and messages as the Dart validators
+  function check(value, what) {
+    const v = value.trim();
+    if (!v) return `Please enter ${what === 'distance' ? 'distance travelled' : 'fuel consumed'}.`;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 'Enter a valid number.';
+    if (n <= 0) return `${what === 'distance' ? 'Distance' : 'Fuel consumed'} must be greater than 0.`;
+    return null;
+  }
+
+  function show(field, msg) {
+    $('w' + field).classList.toggle('bad', !!msg);
+    $('e' + field).textContent = msg || '';
+    $('e' + field).classList.toggle('show', !!msg);
+  }
+
+  function classify(m) {
+    if (m < 10) return { text: 'Poor Efficiency', color: '#FF4D6D', icon: '📉' };
+    if (m <= 15) return { text: 'Average Efficiency', color: '#FFC145', icon: '➖' };
+    return { text: 'Excellent Efficiency', color: '#B8F34A', icon: '📈' };
+  }
+
+  const fmt = n => Number.isInteger(n) ? String(n) : String(+n.toFixed(2));
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const eD = check($('distance').value, 'distance');
+    const eF = check($('fuel').value, 'fuel');
+    show('Distance', eD); show('Fuel', eF);
+    if (eD || eF) { $('result').classList.remove('show'); return; }
+
+    const d = Number($('distance').value), f = Number($('fuel').value), m = d / f;
+    const c = classify(m);
+    $('rValue').textContent = m.toFixed(2) + ' km/l';
+    $('rValue').style.color = c.color;
+    $('badge').textContent = c.icon + ' ' + c.text;
+    $('badge').style.color = c.color;
+    $('badge').style.background = c.color + '26';
+    $('result').style.borderColor = c.color;
+    $('dDistance').textContent = fmt(d) + ' km';
+    $('dFuel').textContent = fmt(f) + ' litres';
+    $('result').classList.add('show');
+    // gauge scale 0-25 km/l
+    const frac = Math.min(Math.max(m / 25, 0), 1);
+    $('marker').style.left = `calc(${frac * 100}% - ${frac * 14}px)`;
+  });
+
+  $('clear').onclick = () => {
+    $('distance').value = ''; $('fuel').value = '';
+    show('Distance', null); show('Fuel', null);
+    $('result').classList.remove('show');
+  };
+</script>
+</body>
+</html>
